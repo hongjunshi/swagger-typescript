@@ -7,7 +7,7 @@ import {
 } from "fs";
 import { format } from "prettier";
 import { SwaggerJson, SwaggerConfig } from "./types";
-import { HTTP_REQUEST, CONFIG, FILE_HOOKS_CONFIG } from "./strings";
+import { CONFIG, FILE_HOOKS_CONFIG } from "./strings";
 import { getJson } from "./getJson";
 import { generator } from "./generator";
 import { build } from "tsc-prog";
@@ -95,7 +95,7 @@ async function generate(config?: SwaggerConfig, cli?: Partial<SwaggerConfig>) {
         generateMock(input, config);
       }
 
-      writeFileSync(`${dir}/services.ts`, code);
+      writeFileSync(`${dir}/index.ts`, code);
       console.log(chalk.yellowBright("services Completed"));
 
       writeFileSync(`${dir}/types.ts`, type);
@@ -109,7 +109,7 @@ async function generate(config?: SwaggerConfig, cli?: Partial<SwaggerConfig>) {
         console.log(chalk.yellowBright("hooks Completed"));
       }
 
-      writeFileSync(`${dir}/httpRequest.ts`, HTTP_REQUEST);
+      // writeFileSync(`${dir}/httpRequest.ts`, HTTP_REQUEST);
       console.log(chalk.yellowBright("httpRequest Completed"));
 
       if (!existsSync(`${dir}/config.${isToJs ? "js" : "ts"}`)) {
@@ -141,8 +141,8 @@ async function generate(config?: SwaggerConfig, cli?: Partial<SwaggerConfig>) {
         ? [
             ...(reactHooks ? ["hooks", "hooksConfig"] : []),
             "config",
-            "httpRequest",
-            "services",
+            // "httpRequest",
+            "index",
             "types",
           ]
         : []),

@@ -1,25 +1,37 @@
 import {
+  getDefineParam,
+  getJsdoc,
+  getParamString,
+  getSchemaName,
   getTsType,
   isAscending,
-  getDefineParam,
-  getParamString,
-  getJsdoc,
-  getSchemaName,
   isMatchWholeWord,
 } from "./utils";
 import { ApiAST, TypeAST } from "./types";
 import {
+  DEPRECATED_WARM_MESSAGE,
   SERVICE_BEGINNING,
   SERVICE_NEEDED_FUNCTIONS,
-  DEPRECATED_WARM_MESSAGE,
 } from "./strings";
+
+function getResponseType(type: string, types: TypeAST[]) {
+  const typeAST = types.find((t) => t.name === type);
+  if (typeAST && typeAST.schema && typeAST.schema.type === "object") {
+    const { properties } = typeAST.schema;
+    if (properties && properties.hasOwnProperty("data")) {
+      const { data } = properties;
+      return getTsType(data);
+    }
+  }
+  return type;
+}
 
 function generateApis(apis: ApiAST[], types: TypeAST[]): string {
   let code = SERVICE_BEGINNING;
   try {
     const apisCode = apis
-      .sort(({ serviceName }, { serviceName: _serviceName }) =>
-        isAscending(serviceName, _serviceName),
+      .sort(({ endPoint }, { endPoint: _endPoint }) =>
+        isAscending(endPoint, _endPoint),
       )
       .reduce(
         (
@@ -39,8 +51,6 @@ function generateApis(apis: ApiAST[], types: TypeAST[]): string {
             method,
             endPoint,
             pathParamsRefString,
-            additionalAxiosConfig,
-            security,
           },
         ) => {
           return (
@@ -64,14 +74,12 @@ ${getJsdoc({
         .join(",")
     }${pathParams.length > 0 ? "," : ""}${
               /** Request Body */
-              requestBody
-                ? `${getDefineParam("requestBody", true, requestBody)},`
-                : ""
+              requestBody ? `${getDefineParam("body", true, requestBody)},` : ""
             }${
               /** Query parameters */
               queryParamsTypeName
                 ? `${getParamString(
-                    "queryParams",
+                    "params",
                     !isQueryParamsNullable,
                     queryParamsTypeName,
                   )},`
@@ -80,13 +88,15 @@ ${getJsdoc({
               /** Header parameters */
               headerParams
                 ? `${getParamString(
-                    "headerParams",
+                    "headers",
                     !isHeaderParamsNullable,
                     headerParams,
                   )},`
                 : ""
-            }configOverride?:AxiosRequestConfig
-): Promise<SwaggerResponse<${responses ? getTsType(responses) : "any"}>> => {
+            }options?: RequestOptions
+): Promise<${
+              responses ? getResponseType(getTsType(responses), types) : "any"
+            }> => {
   ${
     deprecated
       ? `
@@ -98,25 +108,25 @@ ${getJsdoc({
   }`
       : ""
   }
-  return Http.${method}Request(
+  return defHttp.${method}(
+  overrideConfigs(
+  {
+    url:
     ${
       pathParamsRefString
         ? `template(${serviceName}.key,${pathParamsRefString})`
         : `${serviceName}.key`
     },
-    ${queryParamsTypeName ? "queryParams" : "undefined"},
-    ${
+    params:${queryParamsTypeName ? "params" : "undefined"},
+    data:${
       requestBody
         ? contentType === "multipart/form-data" ||
           contentType === "application/x-www-form-urlencoded"
-          ? "objToForm(requestBody)"
-          : "requestBody"
+          ? "objToForm(body)"
+          : "body"
         : "undefined"
-    },
-    ${security},
-    overrideConfig(${additionalAxiosConfig},
-      configOverride,
-    )
+    }
+    }),overrideOptions(options)
   )
 }
 

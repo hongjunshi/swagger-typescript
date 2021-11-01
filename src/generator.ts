@@ -1,26 +1,25 @@
 import {
-  getPathParams,
   generateServiceName,
   getHeaderParams,
   getParametersInfo,
+  getPathParams,
   getRefName,
   toPascalCase,
 } from "./utils";
 import type {
-  SwaggerRequest,
-  SwaggerJson,
-  SwaggerResponse,
-  SwaggerConfig,
   ApiAST,
-  TypeAST,
-  Schema,
-  Parameter,
   ConstantsAST,
   Method,
+  Parameter,
+  Schema,
+  SwaggerConfig,
+  SwaggerJson,
+  SwaggerRequest,
+  SwaggerResponse,
+  TypeAST,
 } from "./types";
 import { generateApis } from "./generateApis";
 import { generateTypes } from "./generateTypes";
-import { generateConstants } from "./generateConstants";
 import { generateHook } from "./generateHook";
 
 function generator(
@@ -132,8 +131,10 @@ function generator(
             },
           )[0];
 
-          const responses = getBodyContent(options.responses?.[200]);
-
+          let responses = getBodyContent(options.responses?.[200]);
+          if (!responses) {
+            responses = getBodyContent(options.responses?.[201]);
+          }
           let pathParamsRefString: string | undefined = pathParams.reduce(
             (prev, { name }) => `${prev}${name},`,
             "",
@@ -159,7 +160,7 @@ function generator(
                 Accept: "${accept}",
               },
             }`);
-
+          const { prefix } = config;
           apis.push({
             contentType,
             summary: options.summary,
@@ -173,7 +174,9 @@ function generator(
             isHeaderParamsNullable: hasNullableHeaderParams,
             responses,
             pathParamsRefString,
-            endPoint,
+            endPoint: prefix
+              ? endPoint.replace(new RegExp(`^${prefix}`, "i"), "")
+              : endPoint,
             method: method as Method,
             security: security
               ? getConstantName(JSON.stringify(security))
@@ -213,8 +216,8 @@ function generator(
       );
     }
 
-    let code = generateApis(apis, types);
-    code += generateConstants(constants);
+    const code = generateApis(apis, types);
+    // code += generateConstants(constants);
     const type = generateTypes(types);
     const hooks = config.reactHooks ? generateHook(apis, types, config) : "";
 

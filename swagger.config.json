@@ -1,11 +1,17 @@
 {
-  "url": "http://192.168.34.101:8085/api/swagger/v2/swagger.json",
+  "url": "http://localhost:9106/v2/api-docs",
   "dir": "./test",
   "language": "typescript",
+  "methodName": "{operationId}",
   "keepJson": true,
-  "reactHooks": true,
-  "useQuery": ["postV2BaseinfoGeneralpropertyPricelistinvoicetypeGetbyid"],
+  "reactHooks": false,
+  "prefix": "/api",
+  "useQuery": [
+    "postV2BaseinfoGeneralpropertyPricelistinvoicetypeGetbyid"
+  ],
   "ignore": {
-    "headerParams": ["terminalId"]
+    "headerParams": [
+      "terminalId"
+    ]
   }
 }
